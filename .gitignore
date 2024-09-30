@@ -1,13 +1,83 @@
-*.tar
-*.tar.*
-*.jar
-*.exe
-*.msi
-*.zip
-*.tgz
-*.log
-*.log.*
-*.sig
+.FilterContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: flex-start; /* Align filters to the start */
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Slight shadow for clean look */
+}
 
-pkg/
-src/
+.filter-item {
+    margin-bottom: 1rem; /* Space between filters */
+    flex-grow: 1; /* Make filters flexible */
+}
+
+.SearchFilters {
+    display: flex;
+    justify-content: center;
+    font-weight: bold;
+    text-decoration: underline;
+    margin-bottom: 0.5rem;
+}
+
+.MultiSelect {
+    width: 100%;
+    min-height: 40px;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Apply ellipsis for long text */
+}
+
+.filter-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: left;
+}
+
+.FilterButtons {
+    padding-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-primary, .btn-secondary {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+/* Media queries to adjust for mobile view */
+@media (max-width: 576px) {
+    .filter-item {
+        flex: 1 1 100%; /* Make each filter take full width on small screens */
+    }
+
+    .btn-primary, .btn-secondary {
+        width: 100%; /* Buttons take full width on mobile */
+        margin-top: 10px;
+    }
+}
