@@ -1,83 +1,120 @@
-.FilterContainer {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    justify-content: flex-start; /* Align filters to the start */
-    padding: 20px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Slight shadow for clean look */
-}
+import React, { useState } from 'react';
+import { Tabs, Tab } from 'react-bootstrap';
+import { FaEdit, FaSave, FaTimes } from 'react-icons/fa'; // Icons for Edit, Save, and Cancel
 
-.filter-item {
-    margin-bottom: 1rem; /* Space between filters */
-    flex-grow: 1; /* Make filters flexible */
-}
+const HolistApp = () => {
+    // Table data state for the modfields tab
+    const [tableData, setTableData] = useState([
+        { id: 1, KCApp: 'Yes', IOA: 'No', QAGuidance: 'Some guidance text', isEditing: false },
+        { id: 2, KCApp: 'No', IOA: 'Yes', QAGuidance: 'Another text', isEditing: false }
+    ]);
 
-.SearchFilters {
-    display: flex;
-    justify-content: center;
-    font-weight: bold;
-    text-decoration: underline;
-    margin-bottom: 0.5rem;
-}
+    // Handle Edit button click
+    const handleEdit = (id) => {
+        const updatedData = tableData.map(row => row.id === id ? { ...row, isEditing: true } : row);
+        setTableData(updatedData);
+    };
 
-.MultiSelect {
-    width: 100%;
-    min-height: 40px;
-    overflow: hidden;
-    text-overflow: ellipsis; /* Apply ellipsis for long text */
-}
+    // Handle Save button click
+    const handleSave = (id) => {
+        const updatedData = tableData.map(row => row.id === id ? { ...row, isEditing: false } : row);
+        setTableData(updatedData);
+    };
 
-.filter-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 14px;
-    font-weight: 600;
-    text-align: left;
-}
+    // Handle Cancel button click (revert to original state)
+    const handleCancel = (id) => {
+        const updatedData = tableData.map(row => row.id === id ? { ...row, isEditing: false } : row);
+        setTableData(updatedData);
+    };
 
-.FilterButtons {
-    padding-top: 20px;
-    display: flex;
-    justify-content: center;
-}
+    // Handle change for Yes/No select dropdowns and free-form text field
+    const handleChange = (id, field, value) => {
+        const updatedData = tableData.map(row => row.id === id ? { ...row, [field]: value } : row);
+        setTableData(updatedData);
+    };
 
-.btn-primary, .btn-secondary {
-    padding: 10px 20px;
-    font-size: 14px;
-    font-weight: 600;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
+    return (
+        <Tabs defaultActiveKey="modfields" id="holist-app-tabs">
+            {/* Other tabs can go here */}
 
-.btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
-}
+            <Tab eventKey="modfields" title="Modify Fields">
+                <h2>Modify Fields</h2>
 
-.btn-primary:hover {
-    background-color: #0056b3;
-}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Action</th>
+                            <th>KCApp</th>
+                            <th>IOA</th>
+                            <th>QA Guidance</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {tableData.map(row => (
+                            <tr key={row.id}>
+                                <td>
+                                    {/* Toggle between Edit and Save/Cancel buttons */}
+                                    {row.isEditing ? (
+                                        <>
+                                            <button className="icon-button" onClick={() => handleSave(row.id)}>
+                                                <FaSave />
+                                            </button>
+                                            <button className="icon-button" onClick={() => handleCancel(row.id)}>
+                                                <FaTimes />
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button className="icon-button" onClick={() => handleEdit(row.id)}>
+                                            <FaEdit />
+                                        </button>
+                                    )}
+                                </td>
 
-.btn-secondary {
-    background-color: #6c757d;
-    border-color: #6c757d;
-}
+                                {/* KCApp field - Yes/No dropdown in edit mode */}
+                                <td>
+                                    {row.isEditing ? (
+                                        <select value={row.KCApp} onChange={(e) => handleChange(row.id, 'KCApp', e.target.value)}>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                        </select>
+                                    ) : (
+                                        row.KCApp
+                                    )}
+                                </td>
 
-.btn-secondary:hover {
-    background-color: #5a6268;
-}
+                                {/* IOA field - Yes/No dropdown in edit mode */}
+                                <td>
+                                    {row.isEditing ? (
+                                        <select value={row.IOA} onChange={(e) => handleChange(row.id, 'IOA', e.target.value)}>
+                                            <option value="Yes">Yes</option>
+                                            <option value="No">No</option>
+                                        </select>
+                                    ) : (
+                                        row.IOA
+                                    )}
+                                </td>
 
-/* Media queries to adjust for mobile view */
-@media (max-width: 576px) {
-    .filter-item {
-        flex: 1 1 100%; /* Make each filter take full width on small screens */
-    }
+                                {/* QA Guidance field - Free-form text input in edit mode */}
+                                <td>
+                                    {row.isEditing ? (
+                                        <input
+                                            type="text"
+                                            value={row.QAGuidance}
+                                            onChange={(e) => handleChange(row.id, 'QAGuidance', e.target.value)}
+                                        />
+                                    ) : (
+                                        row.QAGuidance
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </Tab>
 
-    .btn-primary, .btn-secondary {
-        width: 100%; /* Buttons take full width on mobile */
-        margin-top: 10px;
-    }
-}
+            {/* Additional tabs can go here */}
+        </Tabs>
+    );
+};
+
+export default HolistApp;
