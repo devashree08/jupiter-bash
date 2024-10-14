@@ -1,1 +1,17 @@
-
+    if (filter === 'Opt-APPID') {
+        const projNameOptions = await getProjNameFilter(selected, updatedFilters['Envir'], updatedFilters['Status']);
+        const envirOptions = await getEnvirFilter(selected, updatedFilters['ProjName'], updatedFilters['Status']);
+        const statusOptions = await getStatusFilter(selected, updatedFilters['ProjName'], updatedFilters['Envir']);
+    } else if (filter === 'ProjName') {
+        const optAPPIDOptions = await getOptAPPIDFilter(updatedFilters['ProjName'], updatedFilters['Envir'], updatedFilters['Status']);
+        const envirOptions = await getEnvirFilter(updatedFilters['Opt-APPID'], updatedFilters['ProjName'], updatedFilters['Status']);
+        const statusOptions = await getStatusFilter(updatedFilters['Opt-APPID'], updatedFilters['ProjName'], updatedFilters['Envir']);
+    } else if (filter === 'Envir') {
+        const optAPPIDOptions = await getOptAPPIDFilter(updatedFilters['ProjName'], selected, updatedFilters['Status']);
+        const projNameOptions = await getProjNameFilter(updatedFilters['Opt-APPID'], selected, updatedFilters['Status']);
+        const statusOptions = await getStatusFilter(updatedFilters['Opt-APPID'], updatedFilters['ProjName'], selected);
+    } else if (filter === 'Status') {
+        const optAPPIDOptions = await getOptAPPIDFilter(updatedFilters['ProjName'], updatedFilters['Envir'], selected);
+        const projNameOptions = await getProjNameFilter(updatedFilters['Opt-APPID'], updatedFilters['Envir'], selected);
+        const envirOptions = await getEnvirFilter(updatedFilters['Opt-APPID'], updatedFilters['ProjName'], selected);
+    }
