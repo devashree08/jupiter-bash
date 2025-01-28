@@ -42,8 +42,8 @@ export default function ResponsiveNav() {
     setContactMenuAnchor(null);
   };
 
-  const toggleDrawer = (open) => {
-    setDrawerOpen(open);
+  const toggleDrawer = () => {
+    setDrawerOpen(!isDrawerOpen);
   };
 
   const menuItems = ["Profile", "Settings", "Logout"];
@@ -64,15 +64,6 @@ export default function ResponsiveNav() {
         sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
       >
         <Toolbar>
-          <IconButton
-            edge="start"
-            color="inherit"
-            aria-label="menu"
-            onClick={() => toggleDrawer(true)}
-            sx={{ display: { sm: "none" } }}
-          >
-            <MenuIcon />
-          </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             MyApp
           </Typography>
@@ -112,14 +103,22 @@ export default function ResponsiveNav() {
               </MenuItem>
             ))}
           </Menu>
+          <IconButton
+            edge="end"
+            color="inherit"
+            aria-label="menu"
+            onClick={toggleDrawer}
+          >
+            <MenuIcon />
+          </IconButton>
         </Toolbar>
       </AppBar>
 
       {/* Side Navigation Drawer */}
       <Drawer
-        anchor="left"
+        anchor="right"
         open={isDrawerOpen}
-        onClose={() => toggleDrawer(false)}
+        onClose={toggleDrawer}
         sx={{
           "& .MuiDrawer-paper": {
             width: 240,
