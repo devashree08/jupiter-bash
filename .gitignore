@@ -13,6 +13,7 @@ import {
   ListItemText,
   ListItemIcon,
   Box,
+  Divider,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
@@ -61,7 +62,7 @@ export default function ResponsiveNav() {
       {/* AppBar */}
       <AppBar
         position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: "#003366" }}
       >
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -121,15 +122,15 @@ export default function ResponsiveNav() {
         onClose={toggleDrawer}
         sx={{
           "& .MuiDrawer-paper": {
-            width: 240,
+            width: 60,
+            overflowX: "hidden",
           },
         }}
       >
-        <List>
+        <List sx={{ marginTop: 8 }}>
           {sideNavItems.map((item, index) => (
-            <ListItem button key={index}>
+            <ListItem button key={index} onClick={toggleDrawer} sx={{ display: "flex", justifyContent: "center" }}>
               <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
             </ListItem>
           ))}
         </List>
