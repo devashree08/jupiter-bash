@@ -19,23 +19,8 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
 import InfoIcon from "@mui/icons-material/Info";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
-import { makeStyles } from "@mui/styles";
-
-const useStyles = makeStyles(() => ({
-  appBar: {
-    zIndex: 1201,
-  },
-  drawer: {
-    width: 240,
-  },
-  content: {
-    marginTop: 64,
-    padding: 16,
-  },
-}));
 
 export default function ResponsiveNav() {
-  const classes = useStyles();
   const [anchorEl, setAnchorEl] = useState(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
 
@@ -62,7 +47,10 @@ export default function ResponsiveNav() {
   return (
     <Box>
       {/* AppBar */}
-      <AppBar position="fixed" className={classes.appBar}>
+      <AppBar
+        position="fixed"
+        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}
+      >
         <Toolbar>
           <IconButton
             edge="start"
@@ -81,10 +69,7 @@ export default function ResponsiveNav() {
             <Button color="inherit">About</Button>
             <Button color="inherit">Contact</Button>
           </Box>
-          <IconButton
-            color="inherit"
-            onClick={handleMenuClick}
-          >
+          <IconButton color="inherit" onClick={handleMenuClick}>
             <AccountCircleIcon />
           </IconButton>
           <Menu
@@ -106,7 +91,11 @@ export default function ResponsiveNav() {
         anchor="left"
         open={isDrawerOpen}
         onClose={() => toggleDrawer(false)}
-        classes={{ paper: classes.drawer }}
+        sx={{
+          "& .MuiDrawer-paper": {
+            width: 240,
+          },
+        }}
       >
         <List>
           {sideNavItems.map((item, index) => (
@@ -119,11 +108,10 @@ export default function ResponsiveNav() {
       </Drawer>
 
       {/* Main Content */}
-      <Box className={classes.content}>
+      <Box sx={{ marginTop: 8, padding: 2 }}>
         <Typography variant="h4">Welcome to MyApp!</Typography>
         <Typography variant="body1">This is a responsive navigation example.</Typography>
       </Box>
     </Box>
   );
 }
-
