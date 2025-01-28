@@ -26,6 +26,7 @@ export default function ResponsiveNav() {
   const [anchorEl, setAnchorEl] = useState(null);
   const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
+  const [isExpanded, setExpanded] = useState(false);
 
   const handleMenuClick = (event) => {
     setAnchorEl(event.currentTarget);
@@ -45,6 +46,7 @@ export default function ResponsiveNav() {
 
   const toggleDrawer = () => {
     setDrawerOpen(!isDrawerOpen);
+    setExpanded(!isExpanded);
   };
 
   const menuItems = ["Profile", "Settings", "Logout"];
@@ -120,17 +122,22 @@ export default function ResponsiveNav() {
         anchor="right"
         open={isDrawerOpen}
         onClose={toggleDrawer}
+        variant="permanent"
         sx={{
+          width: isExpanded ? 240 : 60,
+          flexShrink: 0,
           "& .MuiDrawer-paper": {
-            width: 60,
+            width: isExpanded ? 240 : 60,
             overflowX: "hidden",
+            transition: "width 0.3s",
           },
         }}
       >
         <List sx={{ marginTop: 8 }}>
           {sideNavItems.map((item, index) => (
-            <ListItem button key={index} onClick={toggleDrawer} sx={{ display: "flex", justifyContent: "center" }}>
+            <ListItem button key={index} sx={{ justifyContent: isExpanded ? "flex-start" : "center" }}>
               <ListItemIcon>{item.icon}</ListItemIcon>
+              {isExpanded && <ListItemText primary={item.text} />}
             </ListItem>
           ))}
         </List>
