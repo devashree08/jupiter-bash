@@ -19,9 +19,11 @@ import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import HomeIcon from "@mui/icons-material/Home";
 import InfoIcon from "@mui/icons-material/Info";
 import ContactMailIcon from "@mui/icons-material/ContactMail";
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 
 export default function ResponsiveNav() {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [contactMenuAnchor, setContactMenuAnchor] = useState(null);
   const [isDrawerOpen, setDrawerOpen] = useState(false);
 
   const handleMenuClick = (event) => {
@@ -30,6 +32,14 @@ export default function ResponsiveNav() {
 
   const handleMenuClose = () => {
     setAnchorEl(null);
+  };
+
+  const handleContactMenuClick = (event) => {
+    setContactMenuAnchor(event.currentTarget);
+  };
+
+  const handleContactMenuClose = () => {
+    setContactMenuAnchor(null);
   };
 
   const toggleDrawer = (open) => {
@@ -43,6 +53,8 @@ export default function ResponsiveNav() {
     { text: "About", icon: <InfoIcon /> },
     { text: "Contact", icon: <ContactMailIcon /> },
   ];
+
+  const contactSubMenuItems = ["Slack", "Email"];
 
   return (
     <Box>
@@ -67,7 +79,24 @@ export default function ResponsiveNav() {
           <Box sx={{ display: { xs: "none", sm: "block" } }}>
             <Button color="inherit">Home</Button>
             <Button color="inherit">About</Button>
-            <Button color="inherit">Contact</Button>
+            <Button
+              color="inherit"
+              endIcon={<ArrowDropDownIcon />}
+              onClick={handleContactMenuClick}
+            >
+              Contact
+            </Button>
+            <Menu
+              anchorEl={contactMenuAnchor}
+              open={Boolean(contactMenuAnchor)}
+              onClose={handleContactMenuClose}
+            >
+              {contactSubMenuItems.map((item, index) => (
+                <MenuItem key={index} onClick={handleContactMenuClose}>
+                  {item}
+                </MenuItem>
+              ))}
+            </Menu>
           </Box>
           <IconButton color="inherit" onClick={handleMenuClick}>
             <AccountCircleIcon />
