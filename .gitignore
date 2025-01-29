@@ -25,18 +25,14 @@ const CsfDetails = () => {
   const [expandedPanels, setExpandedPanels] = useState({});
   const [selectedSubcategory, setSelectedSubcategory] = useState(null);
   const [openSummaryModal, setOpenSummaryModal] = useState(false);
-  const [openEditModal, setOpenEditModal] = useState(false);
-  const changeSummaryRef = useRef(''); // Stores the editable Change Summary text
-  const newCommentRef = useRef('');
-  const [currentEdit, setCurrentEdit] = useState([]);
-  const commentsRef = useRef({});
+  const changeSummaryRef = useRef(''); // Stores Change Summary for Editing
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const response = await apiClient.get('/GetCSFMappingData');
         
-        // Handling duplicate ChangeSummary values (keep the latest entry)
+        // Handle duplicate ChangeSummary values
         const uniqueData = response.data.reduce((acc, item) => {
           const existing = acc.find(subcat => subcat.csF_2_0_SubcategoryID === item.csF_2_0_SubcategoryID);
           if (!existing) {
@@ -65,7 +61,7 @@ const CsfDetails = () => {
   /*** 🔵 CSF 2.0 CHANGE SUMMARY - OPEN MODAL ***/
   const handleOpenSummaryModal = (subcategory) => {
     setSelectedSubcategory(subcategory);
-    changeSummaryRef.current = subcategory.ChangeSummary || ''; // Load existing summary into ref
+    changeSummaryRef.current = subcategory.ChangeSummary || ''; // Load existing summary
     setOpenSummaryModal(true);
   };
 
@@ -106,42 +102,6 @@ const CsfDetails = () => {
     }
   };
 
-  /*** 🟢 EDIT USER COMMENTS MODAL ***/
-  const handleEditClick = (editData) => {
-    setCurrentEdit(editData);
-    newCommentRef.current = ''; // Reset new comment
-    setOpenEditModal(true);
-  };
-
-  const handleCloseEditModal = () => {
-    setOpenEditModal(false);
-    setCurrentEdit([]);
-  };
-
-  const handleSaveUserChange = async () => {
-    if (!currentEdit.length) return;
-
-    const item = { ...currentEdit[0], newComment: newCommentRef.current.trim() };
-
-    try {
-      await apiClient.post('/api/v1/CSFMapping/handle-user-change', {
-        Entity: item.entity,
-        CSF_1_1_SubcategoryID: item.csF_1_1_SubcategoryID,
-        MaturityLevel: item.maturityLevel,
-        AttributeNumber: item.attributeNumber,
-        AttributeDefinition: item.attributeDefinition,
-        New_CSF_2_0_Subcategory: item.csF_2_0_SubcategoryName,
-        ChangeDecision: item.changeDecision,
-        Comment: item.newComment,
-      });
-
-      toast.success('Successfully saved user change.');
-      setOpenEditModal(false);
-    } catch (error) {
-      toast.error('Failed to save changes.');
-    }
-  };
-
   return (
     <div>
       <ToastContainer />
@@ -149,14 +109,27 @@ const CsfDetails = () => {
       {data.map((subcat) => (
         <Accordion key={subcat.csF_2_0_SubcategoryID} expanded={expandedPanels[subcat.csF_2_0_SubcategoryID] || false} onChange={handleAccordionChange(subcat.csF_2_0_SubcategoryID)}>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography style={{ fontWeight: 'bold' }}>{subcat.csF_2_0_SubcategoryName}</Typography>
-            <IconButton onClick={() => handleOpenSummaryModal(subcat)}>
-              <EditIcon /> Click to Edit Summary
-            </IconButton>
+            <Grid container alignItems="center" spacing={1}>
+              <Grid item>
+                <Typography style={{ fontWeight: 'bold' }}>{subcat.csF_2_0_SubcategoryName}</Typography>
+              </Grid>
+              <Grid item>
+                <IconButton onClick={() => handleOpenSummaryModal(subcat)} size="small">
+                  <EditIcon sx={{ fontSize: 18 }} /> Click to Edit Subcategory Change Summary
+                </IconButton>
+              </Grid>
+            </Grid>
           </AccordionSummary>
           <AccordionDetails>
-            {/* 🔵 CSF 2.0 CHANGE SUMMARY DISPLAY */}
-            {subcat.ChangeSummary && <Typography><strong>C&E Summary:</strong> {subcat.ChangeSummary}</Typography>}
+            {/* 🔵 CSF 2.0 LANGUAGE */}
+            <Typography variant="body2" sx={{ fontStyle: 'italic', mb: 1 }}>{subcat.csF_2_0_SubcategoryLanguage}</Typography>
+
+            {/* 🔵 C&E Change Summary Display */}
+            {subcat.ChangeSummary && (
+              <Typography sx={{ mt: 1, fontWeight: 'bold', color: '#3a3a3a' }}>
+                C&E Subcategory Change Summary: {subcat.ChangeSummary}
+              </Typography>
+            )}
           </AccordionDetails>
         </Accordion>
       ))}
@@ -165,18 +138,32 @@ const CsfDetails = () => {
       {openSummaryModal && (
         <Modal open={openSummaryModal} onClose={handleCloseSummaryModal}>
           <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, bgcolor: 'background.paper', p: 4, boxShadow: 24 }}>
-            <TextField defaultValue={changeSummaryRef.current} onChange={(e) => (changeSummaryRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={4} placeholder="Enter change summary..." />
-            <Button onClick={handleSaveChangeSummary} startIcon={<SaveIcon />} sx={{ mt: 2 }}>Save</Button>
-          </Box>
-        </Modal>
-      )}
+            <Typography variant="h6" mb={2}>
+              Edit Change Summary
+            </Typography>
+            <Typography variant="body1">
+              <strong>CSF 2.0 Subcategory:</strong> {selectedSubcategory?.csF_2_0_SubcategoryName}
+            </Typography>
+            <Typography variant="body1" sx={{ mt: 1 }}>
+              <strong>Related CSF 1.1 Subcategories:</strong>
+            </Typography>
+            {selectedSubcategory?.csF_1_1_SubcategoryName ? (
+              <Tooltip title={selectedSubcategory.csF_1_1_SubcategoryLanguage || 'No Language Info'} arrow placement="right">
+                <Typography variant="body2" sx={{ ml: 2, fontStyle: 'italic', color: '#666' }}>
+                  {selectedSubcategory.csF_1_1_SubcategoryName}
+                </Typography>
+              </Tooltip>
+            ) : (
+              <Typography variant="body2" sx={{ ml: 2 }}>No Mapping</Typography>
+            )}
 
-      {/* 🟢 USER CHANGE EDIT MODAL */}
-      {openEditModal && (
-        <Modal open={openEditModal} onClose={handleCloseEditModal}>
-          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 800, bgcolor: 'background.paper', p: 4, boxShadow: 24 }}>
-            <TextField defaultValue={newCommentRef.current} onChange={(e) => (newCommentRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={3} placeholder="Enter comment..." />
-            <Button onClick={handleSaveUserChange} startIcon={<SaveIcon />} sx={{ mt: 2 }}>Save</Button>
+            {/* Change Summary Input */}
+            <TextField defaultValue={changeSummaryRef.current} onChange={(e) => (changeSummaryRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={4} placeholder="Enter change summary..." sx={{ mt: 2 }} />
+
+            {/* Save Button */}
+            <Button onClick={handleSaveChangeSummary} startIcon={<SaveIcon />} sx={{ mt: 2 }} variant="contained">
+              Save
+            </Button>
           </Box>
         </Modal>
       )}
