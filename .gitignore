@@ -1,5 +1,4 @@
-
-        {/* Subcategory Change Summary Modal */}
+ {/* Subcategory Change Summary Modal */}
         <Modal open={openSummaryModal} onClose={handleCloseSummaryModal}>
           <Box
             sx={{
@@ -16,6 +15,9 @@
           >
             <Typography variant="h6" gutterBottom>
               Edit Subcategory Change Summary
+            </Typography>
+            <Typography>
+              <strong>CSF 2.0 Subcategory:</strong> {selectedCsf2Subcategory?.subcategoryName}
             </Typography>
             <TextField
               label="Change Summary"
