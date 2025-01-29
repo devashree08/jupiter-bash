@@ -1,169 +1,187 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  AppBar,
-  Toolbar,
-  IconButton,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Typography,
-  Menu,
-  MenuItem,
+  Grid,
+  TextField,
   Button,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
+  Tooltip,
+  Modal,
   Box,
-  Divider,
-  Container,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import HomeIcon from "@mui/icons-material/Home";
-import InfoIcon from "@mui/icons-material/Info";
-import ContactMailIcon from "@mui/icons-material/ContactMail";
-import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
-import { NavLink } from "react-router-dom";
+  IconButton,
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import InfoIcon from '@mui/icons-material/Info';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import apiClient from '../../api/apiClient';
 
-export default function ResponsiveNav() {
-  const [menuAnchors, setMenuAnchors] = useState({});
-  const [isDrawerOpen, setDrawerOpen] = useState(false);
-  const [isExpanded, setExpanded] = useState(false);
+const CsfDetails = () => {
+  const [data, setData] = useState([]);
+  const [expandedPanels, setExpandedPanels] = useState({});
+  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+  const [openSummaryModal, setOpenSummaryModal] = useState(false);
+  const [openEditModal, setOpenEditModal] = useState(false);
+  const changeSummaryRef = useRef(''); // Stores the editable Change Summary text
+  const newCommentRef = useRef('');
+  const [currentEdit, setCurrentEdit] = useState([]);
+  const commentsRef = useRef({});
 
-  const handleMenuClick = (event, menuName) => {
-    setMenuAnchors((prev) => ({ ...prev, [menuName]: event.currentTarget }));
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await apiClient.get('/GetCSFMappingData');
+        
+        // Handling duplicate ChangeSummary values (keep the latest entry)
+        const uniqueData = response.data.reduce((acc, item) => {
+          const existing = acc.find(subcat => subcat.csF_2_0_SubcategoryID === item.csF_2_0_SubcategoryID);
+          if (!existing) {
+            acc.push(item);
+          }
+          return acc;
+        }, []);
+
+        setData(uniqueData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to fetch CSF mapping data.');
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleAccordionChange = (panel) => (event, isExpanded) => {
+    setExpandedPanels((prev) => ({
+      ...prev,
+      [panel]: isExpanded,
+    }));
   };
 
-  const handleMenuClose = (menuName) => {
-    setMenuAnchors((prev) => ({ ...prev, [menuName]: null }));
+  /*** 🔵 CSF 2.0 CHANGE SUMMARY - OPEN MODAL ***/
+  const handleOpenSummaryModal = (subcategory) => {
+    setSelectedSubcategory(subcategory);
+    changeSummaryRef.current = subcategory.ChangeSummary || ''; // Load existing summary into ref
+    setOpenSummaryModal(true);
   };
 
-  const toggleDrawer = () => {
-    setDrawerOpen(!isDrawerOpen);
-    setExpanded(!isExpanded);
+  /*** 🔵 CSF 2.0 CHANGE SUMMARY - CLOSE MODAL ***/
+  const handleCloseSummaryModal = () => {
+    setOpenSummaryModal(false);
+    setSelectedSubcategory(null);
   };
 
-  const menuItems = ["Profile", "Settings", "Logout"];
+  /*** 🔵 CSF 2.0 CHANGE SUMMARY - SAVE FUNCTION ***/
+  const handleSaveChangeSummary = async () => {
+    if (!selectedSubcategory) return;
+    const updatedSummary = changeSummaryRef.current.trim();
+    if (!updatedSummary) {
+      toast.error('Change Summary cannot be empty.');
+      return;
+    }
 
-  const sideNavItems = [
-    { text: "Home", icon: <HomeIcon fontSize="large" />, link: "/" },
-    { text: "About", icon: <InfoIcon fontSize="large" />, link: "/about" },
-    { text: "Contact", icon: <ContactMailIcon fontSize="large" />, link: "/contact" },
-  ];
+    try {
+      await apiClient.post('/UpdateCSF20SubcategoryChangeSummary', {
+        CSF_2_0_SubcategoryID: selectedSubcategory.csF_2_0_SubcategoryID,
+        ChangeSummary: updatedSummary,
+        UserID: 'test_user', // Replace with actual UserID from session
+      });
 
-  const dropdownMenus = {
-    contact: [
-      { text: "Slack", link: "https://slack.com" },
-      { text: "Email", link: "mailto:support@example.com" },
-    ],
-    about: [
-      { text: "Our Team", link: "/team" },
-      { text: "Careers", link: "/careers" },
-    ],
+      setData((prevData) =>
+        prevData.map((subcat) =>
+          subcat.csF_2_0_SubcategoryID === selectedSubcategory.csF_2_0_SubcategoryID
+            ? { ...subcat, ChangeSummary: updatedSummary }
+            : subcat
+        )
+      );
+
+      toast.success('Change Summary saved successfully.');
+      setOpenSummaryModal(false);
+    } catch (error) {
+      toast.error('Failed to save change summary.');
+    }
+  };
+
+  /*** 🟢 EDIT USER COMMENTS MODAL ***/
+  const handleEditClick = (editData) => {
+    setCurrentEdit(editData);
+    newCommentRef.current = ''; // Reset new comment
+    setOpenEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setOpenEditModal(false);
+    setCurrentEdit([]);
+  };
+
+  const handleSaveUserChange = async () => {
+    if (!currentEdit.length) return;
+
+    const item = { ...currentEdit[0], newComment: newCommentRef.current.trim() };
+
+    try {
+      await apiClient.post('/api/v1/CSFMapping/handle-user-change', {
+        Entity: item.entity,
+        CSF_1_1_SubcategoryID: item.csF_1_1_SubcategoryID,
+        MaturityLevel: item.maturityLevel,
+        AttributeNumber: item.attributeNumber,
+        AttributeDefinition: item.attributeDefinition,
+        New_CSF_2_0_Subcategory: item.csF_2_0_SubcategoryName,
+        ChangeDecision: item.changeDecision,
+        Comment: item.newComment,
+      });
+
+      toast.success('Successfully saved user change.');
+      setOpenEditModal(false);
+    } catch (error) {
+      toast.error('Failed to save changes.');
+    }
   };
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      {/* AppBar */}
-      <AppBar
-        position="fixed"
-        sx={{ zIndex: (theme) => theme.zIndex.drawer + 1, backgroundColor: "#003366" }}
-      >
-        <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            MyApp
-          </Typography>
-          <Box sx={{ display: { xs: "none", sm: "block" } }}>
-            <Button color="inherit">Home</Button>
-            <Button
-              color="inherit"
-              endIcon={<ArrowDropDownIcon />}
-              onClick={(e) => handleMenuClick(e, "about")}
-            >
-              About
-            </Button>
-            <Menu
-              anchorEl={menuAnchors["about"]}
-              open={Boolean(menuAnchors["about"])}
-              onClose={() => handleMenuClose("about")}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-              transformOrigin={{ vertical: "top", horizontal: "left" }}
-            >
-              {dropdownMenus.about.map((item, index) => (
-                <MenuItem key={index} component={NavLink} to={item.link} onClick={() => handleMenuClose("about")}>
-                  {item.text}
-                </MenuItem>
-              ))}
-            </Menu>
-            <Button
-              color="inherit"
-              endIcon={<ArrowDropDownIcon />}
-              onClick={(e) => handleMenuClick(e, "contact")}
-            >
-              Contact
-            </Button>
-            <Menu
-              anchorEl={menuAnchors["contact"]}
-              open={Boolean(menuAnchors["contact"])}
-              onClose={() => handleMenuClose("contact")}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-              transformOrigin={{ vertical: "top", horizontal: "left" }}
-            >
-              {dropdownMenus.contact.map((item, index) => (
-                <MenuItem
-                  key={index}
-                  component="a"
-                  href={item.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => handleMenuClose("contact")}
-                >
-                  {item.text}
-                </MenuItem>
-              ))}
-            </Menu>
-          </Box>
-          <IconButton
-            edge="end"
-            color="inherit"
-            aria-label="menu"
-            onClick={toggleDrawer}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
+    <div>
+      <ToastContainer />
 
-      {/* Side Navigation Drawer */}
-      <Drawer
-        anchor="right"
-        open={isDrawerOpen}
-        onClose={toggleDrawer}
-        variant="permanent"
-        sx={{
-          width: isExpanded ? 240 : 60,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: isExpanded ? 240 : 60,
-            overflowX: "hidden",
-            transition: "width 0.3s",
-          },
-        }}
-      >
-        <List sx={{ marginTop: 8 }}>
-          {sideNavItems.map((item, index) => (
-            <ListItem
-              button
-              key={index}
-              component={NavLink}
-              to={item.link}
-              sx={{ justifyContent: isExpanded ? "flex-start" : "center" }}
-            >
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              {isExpanded && <ListItemText primary={item.text} />}
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-    </Box>
+      {data.map((subcat) => (
+        <Accordion key={subcat.csF_2_0_SubcategoryID} expanded={expandedPanels[subcat.csF_2_0_SubcategoryID] || false} onChange={handleAccordionChange(subcat.csF_2_0_SubcategoryID)}>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Typography style={{ fontWeight: 'bold' }}>{subcat.csF_2_0_SubcategoryName}</Typography>
+            <IconButton onClick={() => handleOpenSummaryModal(subcat)}>
+              <EditIcon /> Click to Edit Summary
+            </IconButton>
+          </AccordionSummary>
+          <AccordionDetails>
+            {/* 🔵 CSF 2.0 CHANGE SUMMARY DISPLAY */}
+            {subcat.ChangeSummary && <Typography><strong>C&E Summary:</strong> {subcat.ChangeSummary}</Typography>}
+          </AccordionDetails>
+        </Accordion>
+      ))}
+
+      {/* 🔵 CSF 2.0 CHANGE SUMMARY MODAL */}
+      {openSummaryModal && (
+        <Modal open={openSummaryModal} onClose={handleCloseSummaryModal}>
+          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, bgcolor: 'background.paper', p: 4, boxShadow: 24 }}>
+            <TextField defaultValue={changeSummaryRef.current} onChange={(e) => (changeSummaryRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={4} placeholder="Enter change summary..." />
+            <Button onClick={handleSaveChangeSummary} startIcon={<SaveIcon />} sx={{ mt: 2 }}>Save</Button>
+          </Box>
+        </Modal>
+      )}
+
+      {/* 🟢 USER CHANGE EDIT MODAL */}
+      {openEditModal && (
+        <Modal open={openEditModal} onClose={handleCloseEditModal}>
+          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 800, bgcolor: 'background.paper', p: 4, boxShadow: 24 }}>
+            <TextField defaultValue={newCommentRef.current} onChange={(e) => (newCommentRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={3} placeholder="Enter comment..." />
+            <Button onClick={handleSaveUserChange} startIcon={<SaveIcon />} sx={{ mt: 2 }}>Save</Button>
+          </Box>
+        </Modal>
+      )}
+    </div>
   );
-}
+};
+
+export default CsfDetails;
