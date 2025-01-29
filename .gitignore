@@ -1,174 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  Typography,
-  Grid,
-  TextField,
-  Button,
-  Tooltip,
-  Modal,
-  Box,
-  IconButton,
-} from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import EditIcon from '@mui/icons-material/Edit';
-import SaveIcon from '@mui/icons-material/Save';
-import InfoIcon from '@mui/icons-material/Info';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import apiClient from '../../api/apiClient';
 
-const CsfDetails = () => {
-  const [data, setData] = useState([]);
-  const [expandedPanels, setExpandedPanels] = useState({});
-  const [selectedSubcategory, setSelectedSubcategory] = useState(null);
-  const [openSummaryModal, setOpenSummaryModal] = useState(false);
-  const changeSummaryRef = useRef(''); // Stores Change Summary for Editing
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await apiClient.get('/GetCSFMappingData');
-        
-        // Handle duplicate ChangeSummary values
-        const uniqueData = response.data.reduce((acc, item) => {
-          const existing = acc.find(subcat => subcat.csF_2_0_SubcategoryID === item.csF_2_0_SubcategoryID);
-          if (!existing) {
-            acc.push(item);
-          }
-          return acc;
-        }, []);
-
-        setData(uniqueData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to fetch CSF mapping data.');
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  const handleAccordionChange = (panel) => (event, isExpanded) => {
-    setExpandedPanels((prev) => ({
-      ...prev,
-      [panel]: isExpanded,
-    }));
-  };
-
-  /*** 🔵 CSF 2.0 CHANGE SUMMARY - OPEN MODAL ***/
-  const handleOpenSummaryModal = (subcategory) => {
-    setSelectedSubcategory(subcategory);
-    changeSummaryRef.current = subcategory.ChangeSummary || ''; // Load existing summary
-    setOpenSummaryModal(true);
-  };
-
-  /*** 🔵 CSF 2.0 CHANGE SUMMARY - CLOSE MODAL ***/
-  const handleCloseSummaryModal = () => {
-    setOpenSummaryModal(false);
-    setSelectedSubcategory(null);
-  };
-
-  /*** 🔵 CSF 2.0 CHANGE SUMMARY - SAVE FUNCTION ***/
-  const handleSaveChangeSummary = async () => {
-    if (!selectedSubcategory) return;
-    const updatedSummary = changeSummaryRef.current.trim();
-    if (!updatedSummary) {
-      toast.error('Change Summary cannot be empty.');
-      return;
-    }
-
-    try {
-      await apiClient.post('/UpdateCSF20SubcategoryChangeSummary', {
-        CSF_2_0_SubcategoryID: selectedSubcategory.csF_2_0_SubcategoryID,
-        ChangeSummary: updatedSummary,
-        UserID: 'test_user', // Replace with actual UserID from session
-      });
-
-      setData((prevData) =>
-        prevData.map((subcat) =>
-          subcat.csF_2_0_SubcategoryID === selectedSubcategory.csF_2_0_SubcategoryID
-            ? { ...subcat, ChangeSummary: updatedSummary }
-            : subcat
-        )
-      );
-
-      toast.success('Change Summary saved successfully.');
-      setOpenSummaryModal(false);
-    } catch (error) {
-      toast.error('Failed to save change summary.');
-    }
-  };
-
-  return (
-    <div>
-      <ToastContainer />
-
-      {data.map((subcat) => (
-        <Accordion key={subcat.csF_2_0_SubcategoryID} expanded={expandedPanels[subcat.csF_2_0_SubcategoryID] || false} onChange={handleAccordionChange(subcat.csF_2_0_SubcategoryID)}>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Grid container alignItems="center" spacing={1}>
-              <Grid item>
-                <Typography style={{ fontWeight: 'bold' }}>{subcat.csF_2_0_SubcategoryName}</Typography>
-              </Grid>
-              <Grid item>
-                <IconButton onClick={() => handleOpenSummaryModal(subcat)} size="small">
-                  <EditIcon sx={{ fontSize: 18 }} /> Click to Edit Subcategory Change Summary
-                </IconButton>
-              </Grid>
-            </Grid>
-          </AccordionSummary>
-          <AccordionDetails>
-            {/* 🔵 CSF 2.0 LANGUAGE */}
-            <Typography variant="body2" sx={{ fontStyle: 'italic', mb: 1 }}>{subcat.csF_2_0_SubcategoryLanguage}</Typography>
-
-            {/* 🔵 C&E Change Summary Display */}
-            {subcat.ChangeSummary && (
-              <Typography sx={{ mt: 1, fontWeight: 'bold', color: '#3a3a3a' }}>
-                C&E Subcategory Change Summary: {subcat.ChangeSummary}
-              </Typography>
-            )}
-          </AccordionDetails>
-        </Accordion>
-      ))}
-
-      {/* 🔵 CSF 2.0 CHANGE SUMMARY MODAL */}
-      {openSummaryModal && (
+        {/* Subcategory Change Summary Modal */}
         <Modal open={openSummaryModal} onClose={handleCloseSummaryModal}>
-          <Box sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 600, bgcolor: 'background.paper', p: 4, boxShadow: 24 }}>
-            <Typography variant="h6" mb={2}>
-              Edit Change Summary
+          <Box
+            sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 600,
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+            }}
+          >
+            <Typography variant="h6" gutterBottom>
+              Edit Subcategory Change Summary
             </Typography>
-            <Typography variant="body1">
-              <strong>CSF 2.0 Subcategory:</strong> {selectedSubcategory?.csF_2_0_SubcategoryName}
-            </Typography>
-            <Typography variant="body1" sx={{ mt: 1 }}>
-              <strong>Related CSF 1.1 Subcategories:</strong>
-            </Typography>
-            {selectedSubcategory?.csF_1_1_SubcategoryName ? (
-              <Tooltip title={selectedSubcategory.csF_1_1_SubcategoryLanguage || 'No Language Info'} arrow placement="right">
-                <Typography variant="body2" sx={{ ml: 2, fontStyle: 'italic', color: '#666' }}>
-                  {selectedSubcategory.csF_1_1_SubcategoryName}
-                </Typography>
-              </Tooltip>
-            ) : (
-              <Typography variant="body2" sx={{ ml: 2 }}>No Mapping</Typography>
-            )}
-
-            {/* Change Summary Input */}
-            <TextField defaultValue={changeSummaryRef.current} onChange={(e) => (changeSummaryRef.current = e.target.value)} variant="outlined" fullWidth multiline rows={4} placeholder="Enter change summary..." sx={{ mt: 2 }} />
-
-            {/* Save Button */}
-            <Button onClick={handleSaveChangeSummary} startIcon={<SaveIcon />} sx={{ mt: 2 }} variant="contained">
-              Save
-            </Button>
+            <TextField
+              label="Change Summary"
+              defaultValue={changeSummaryRef.current}
+              fullWidth
+              multiline
+              rows={4}
+            />
+            <Box mt={2} display="flex" justifyContent="flex-end">
+              <Button onClick={handleCloseSummaryModal} startIcon={<CloseIcon />} sx={{ mr: 1 }}>
+                Cancel
+              </Button>
+              <Button variant="contained" color="primary" startIcon={<SaveIcon />}>
+                Save
+              </Button>
+            </Box>
           </Box>
         </Modal>
-      )}
-    </div>
-  );
-};
-
-export default CsfDetails;
