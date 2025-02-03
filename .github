@@ -1,0 +1,140 @@
+import React, { useState, useEffect } from "react";
+import { DataGrid } from "@mui/x-data-grid";
+import { Button, TextField, Snackbar, Alert } from "@mui/material";
+import axios from "axios";
+import dayjs from "dayjs";
+
+const MetricPage = () => {
+  const [metrics, setMetrics] = useState([]);
+  const [editRows, setEditRows] = useState({});
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
+
+  useEffect(() => {
+    fetchMetrics();
+  }, []);
+
+  const fetchMetrics = async () => {
+    try {
+      const response = await axios.get("/api/GetManualMetric");
+      setMetrics(response.data);
+    } catch (error) {
+      console.error("Error fetching metrics", error);
+    }
+  };
+
+  const handleEditChange = (id, field, value) => {
+    if (field === "numValue" || field === "denValue") {
+      if (value === "" || /^-?\d*(\.\d+)?$/.test(value)) {
+        setEditRows((prev) => ({
+          ...prev,
+          [id]: { ...prev[id], [field]: value },
+        }));
+      }
+    }
+  };
+
+  const handleSave = async (id) => {
+    const metricToUpdate = editRows[id];
+    if (!metricToUpdate?.numValue) {
+      setSnackbar({ open: true, message: "Num Value is required", severity: "error" });
+      return;
+    }
+    try {
+      await axios.post("/api/UpdateManualMetric", { id, ...metricToUpdate });
+      setSnackbar({ open: true, message: `Metric Data updated for ${id}`, severity: "success" });
+      fetchMetrics();
+      setEditRows((prev) => {
+        const newEditRows = { ...prev };
+        delete newEditRows[id];
+        return newEditRows;
+      });
+    } catch (error) {
+      setSnackbar({ open: true, message: "Failed to update metric", severity: "error" });
+    }
+  };
+
+  const currentMonth = dayjs().format("YYYY-MM");
+  const pastSixMonths = Array.from({ length: 7 }, (_, i) => dayjs().subtract(i, "month").format("YYYY-MM"));
+
+  const columns = [
+    {
+      field: "edit",
+      headerName: "Edit",
+      width: 100,
+      renderCell: (params) =>
+        params.row.reportMonth === currentMonth ? (
+          editRows[params.id] ? (
+            <Button variant="contained" size="small" onClick={() => handleSave(params.id)}>
+              Save
+            </Button>
+          ) : (
+            <Button variant="outlined" size="small" onClick={() => setEditRows({ ...editRows, [params.id]: params.row })}>
+              Edit
+            </Button>
+          )
+        ) : null,
+    },
+    { field: "reportMonth", headerName: "Report Month", width: 150, sortable: true, filterable: true },
+    { field: "l3_metric", headerName: "L3 Metric", width: 150, sortable: true },
+    { field: "display_id", headerName: "L3 Display ID", width: 150 },
+    { field: "metricDescription", headerName: "Metric Description", width: 250 },
+    {
+      field: "numValue",
+      headerName: "Num Value",
+      width: 120,
+      editable: true,
+      renderCell: (params) =>
+        editRows[params.id] ? (
+          <TextField
+            size="small"
+            value={editRows[params.id]?.numValue || ""}
+            onChange={(e) => handleEditChange(params.id, "numValue", e.target.value)}
+          />
+        ) : (
+          params.value
+        ),
+    },
+    {
+      field: "denValue",
+      headerName: "Den Value",
+      width: 120,
+      editable: true,
+      renderCell: (params) =>
+        editRows[params.id] ? (
+          <TextField
+            size="small"
+            value={editRows[params.id]?.denValue || ""}
+            onChange={(e) => handleEditChange(params.id, "denValue", e.target.value)}
+          />
+        ) : (
+          params.value
+        ),
+    },
+    { field: "targetValue", headerName: "Target Value", width: 120 },
+  ];
+
+  return (
+    <div style={{ height: 500, width: "100%" }}>
+      <DataGrid
+        rows={metrics.filter((m) => pastSixMonths.includes(m.reportMonth))}
+        columns={columns}
+        pageSize={10}
+        rowsPerPageOptions={[10, 25, 50]}
+        disableSelectionOnClick
+        sx={{
+          "& .MuiDataGrid-columnHeaders": {
+            position: "sticky",
+            top: 0,
+            backgroundColor: "#fff",
+            zIndex: 1,
+          },
+        }}
+      />
+      <Snackbar open={snackbar.open} autoHideDuration={3000} onClose={() => setSnackbar({ ...snackbar, open: false })}>
+        <Alert severity={snackbar.severity}>{snackbar.message}</Alert>
+      </Snackbar>
+    </div>
+  );
+};
+
+export default MetricPage;
